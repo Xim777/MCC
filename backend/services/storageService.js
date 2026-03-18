@@ -1,52 +1,53 @@
-/**
- * Storage Service - Local disk storage
- * Photos saved to /backend/uploads/ and served via Express static files.
- * To switch to Google Drive later, just swap this file.
- */
-
+const { put, del, list } = require('@vercel/blob');
+const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
 
+const isVercel = !!process.env.BLOB_READ_WRITE_TOKEN;
+
+// Local fallback directory for dev
 const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
-
-// Ensure upload directory exists
-if (!fs.existsSync(UPLOAD_DIR)) {
+if (!isVercel && !fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
-/**
- * Save a file to disk
- * @param {Buffer} fileBuffer
- * @param {string} originalName
- * @param {string} entryId
- * @returns {{url: string, filename: string}}
- */
-function uploadPhoto(fileBuffer, originalName, entryId) {
-  const entryDir = path.join(UPLOAD_DIR, entryId);
-  if (!fs.existsSync(entryDir)) {
-    fs.mkdirSync(entryDir, { recursive: true });
-  }
-
+async function uploadPhoto(fileBuffer, originalName, entryId) {
   const ext = path.extname(originalName);
   const filename = `${uuidv4()}${ext}`;
-  const filePath = path.join(entryDir, filename);
 
-  fs.writeFileSync(filePath, fileBuffer);
-
-  const url = `/uploads/${entryId}/${filename}`;
-  return { url, filename };
+  if (isVercel) {
+    const blob = await put(`uploads/${entryId}/${filename}`, fileBuffer, {
+      access: 'public',
+      contentType: getContentType(ext)
+    });
+    return { url: blob.url, filename };
+  } else {
+    const entryDir = path.join(UPLOAD_DIR, entryId);
+    if (!fs.existsSync(entryDir)) {
+      fs.mkdirSync(entryDir, { recursive: true });
+    }
+    fs.writeFileSync(path.join(entryDir, filename), fileBuffer);
+    return { url: `/uploads/${entryId}/${filename}`, filename };
+  }
 }
 
-/**
- * Delete all photos for an entry
- * @param {string} entryId
- */
-function deleteEntryPhotos(entryId) {
-  const entryDir = path.join(UPLOAD_DIR, entryId);
-  if (fs.existsSync(entryDir)) {
-    fs.rmSync(entryDir, { recursive: true, force: true });
+async function deleteEntryPhotos(entryId) {
+  if (isVercel) {
+    const { blobs } = await list({ prefix: `uploads/${entryId}/` });
+    for (const blob of blobs) {
+      await del(blob.url);
+    }
+  } else {
+    const entryDir = path.join(UPLOAD_DIR, entryId);
+    if (fs.existsSync(entryDir)) {
+      fs.rmSync(entryDir, { recursive: true, force: true });
+    }
   }
+}
+
+function getContentType(ext) {
+  const types = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp' };
+  return types[ext.toLowerCase()] || 'application/octet-stream';
 }
 
 module.exports = { uploadPhoto, deleteEntryPhotos };

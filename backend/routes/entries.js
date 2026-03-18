@@ -603,10 +603,10 @@ router.put('/:id/final-reply', requireAuth, upload.array('photos', 10), async (r
       return res.status(400).json({ error: 'At least one evidence photo is required.' });
     }
 
-    // Save photos to disk
+    // Save photos
     const photoUrls = [];
     for (const file of req.files) {
-      const result = uploadPhoto(file.buffer, file.originalname, id);
+      const result = await uploadPhoto(file.buffer, file.originalname, id);
       photoUrls.push(result);
     }
 

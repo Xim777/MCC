@@ -256,8 +256,91 @@ router.post('/upload-excel', requireAdmin, upload.single('file'), async (req, re
     districts.forEach(d => {
       districtLookup[d.name.toLowerCase()] = d.id;
       districtLookup[d.id] = d.id;
-      // Also match partial names like "kanchipuram" from "Kanchipuram"
+      districtLookup[d.code] = d.id;
       districtLookup[d.name.toLowerCase().replace(/\s+/g, '')] = d.id;
+    });
+
+    // Common alternate names, Tamil transliterations, abbreviations, and typos
+    const districtAliases = {
+      // Coimbatore
+      'kovai': 'coimbatore', 'cbe': 'coimbatore', 'coimbathore': 'coimbatore', 'kovaai': 'coimbatore',
+      // Tiruvallur
+      'thiruvallur': 'tiruvallur', 'thirullavi': 'tiruvallur', 'thirullavar': 'tiruvallur', 'tiruvallore': 'tiruvallur',
+      // Chennai
+      'madras': 'chennai', 'chennnai': 'chennai', 'cennai': 'chennai',
+      // Tiruchirappalli
+      'trichy': 'tiruchirappalli', 'tiruchi': 'tiruchirappalli', 'trichirappalli': 'tiruchirappalli', 'tiruchy': 'tiruchirappalli', 'tiruchchirapalli': 'tiruchirappalli',
+      // Thoothukudi
+      'tuticorin': 'thoothukudi', 'thoothukudi(tuticorin)': 'thoothukudi', 'thoothukkudi': 'thoothukudi', 'tuticorn': 'thoothukudi',
+      // Kanchipuram
+      'kanchi': 'kanchipuram', 'kancheepuram': 'kanchipuram', 'kaanchipuram': 'kanchipuram',
+      // Kanyakumari
+      'kanniyakumari': 'kanyakumari', 'kk': 'kanyakumari', 'nagercoil': 'kanyakumari',
+      // Thanjavur
+      'tanjore': 'thanjavur', 'thanjaavur': 'thanjavur', 'thanjur': 'thanjavur',
+      // Madurai
+      'mathurai': 'madurai', 'maduai': 'madurai',
+      // Tirunelveli
+      'nellai': 'tirunelveli', 'thirunelveli': 'tirunelveli', 'tinnevelly': 'tirunelveli',
+      // Tiruvannamalai
+      'thiruvannamalai': 'tiruvannamalai', 'tiruvannamalai ': 'tiruvannamalai', 'thiruvannamalai ': 'tiruvannamalai',
+      // Salem
+      'selem': 'salem',
+      // Erode
+      'eerode': 'erode', 'eroad': 'erode',
+      // Vellore
+      'vellur': 'vellore', 'velloor': 'vellore',
+      // Cuddalore
+      'cudalur': 'cuddalore', 'cuddlore': 'cuddalore', 'kadalore': 'cuddalore',
+      // Dharmapuri
+      'dharmapuri ': 'dharmapuri', 'dharmaburi': 'dharmapuri',
+      // Krishnagiri
+      'krishnagri': 'krishnagiri', 'kirushnagiri': 'krishnagiri',
+      // Ramanathapuram
+      'ramnad': 'ramanathapuram', 'ramnathapuram': 'ramanathapuram', 'ramanathpuram': 'ramanathapuram',
+      // Sivagangai
+      'sivaganga': 'sivagangai', 'sivagagai': 'sivagangai',
+      // Viluppuram
+      'villupuram': 'viluppuram', 'vizhuppuram': 'viluppuram', 'vilupuram': 'viluppuram',
+      // Virudhunagar
+      'virudunagar': 'virudhunagar', 'virudhunager': 'virudhunagar',
+      // Nilgiris
+      'nilgiri': 'nilgiris', 'ooty': 'nilgiris', 'udhagai': 'nilgiris', 'neelagiri': 'nilgiris',
+      // Nagapattinam
+      'nagapatnam': 'nagapattinam', 'nagapatinam': 'nagapattinam',
+      // Mayiladuthurai
+      'mayuram': 'mayiladuthurai', 'mayiladhuthurai': 'mayiladuthurai',
+      // Tiruppur
+      'thiruppur': 'tiruppur', 'tirupur': 'tiruppur',
+      // Tirupathur
+      'thirupathur': 'tirupathur', 'tirupattur': 'tirupathur',
+      // Tiruvarur
+      'thiruvarur': 'tiruvarur', 'thiruvaroor': 'tiruvarur',
+      // Chengalpattu
+      'chengalpet': 'chengalpattu', 'chengalpatu': 'chengalpattu', 'chengalput': 'chengalpattu',
+      // Pudukkottai
+      'pudukottai': 'pudukkottai', 'pudukkotai': 'pudukkottai',
+      // Kallakurichi
+      'kalakurichi': 'kallakurichi', 'kallakurchi': 'kallakurichi',
+      // Ranipet
+      'ranipettai': 'ranipet',
+      // Perambalur
+      'perambaloor': 'perambalur',
+      // Dindigul
+      'dindugal': 'dindigul', 'dindukkal': 'dindigul',
+      // Namakkal
+      'namakal': 'namakkal',
+      // Karur
+      'karoor': 'karur',
+      // Tenkasi
+      'thenkasi': 'tenkasi',
+      // Theni
+      'theni ': 'theni',
+      // Ariyalur
+      'ariyaloor': 'ariyalur',
+    };
+    Object.entries(districtAliases).forEach(([alias, id]) => {
+      districtLookup[alias.trim().toLowerCase()] = id;
     });
 
     // Helper: parse "Chennai (Aminjikarai)" → { district: "chennai", constituency: "Aminjikarai" }

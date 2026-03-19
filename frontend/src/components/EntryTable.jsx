@@ -138,8 +138,8 @@ export default function EntryTable({ entries, user, onDelete, onReply, onFillCon
               <th>{t.newsLink}</th>
               <th>{t.status}</th>
               <th>{t.immediateReply}</th>
-              <th>{t.repliedLink}</th>
               <th>{t.finalReply}</th>
+              <th>{t.repliedLink}</th>
               <th>{t.evidence}</th>
               <th>{t.actions}</th>
             </tr>
@@ -190,13 +190,13 @@ export default function EntryTable({ entries, user, onDelete, onReply, onFillCon
                 </td>
                 <td><StatusBadge status={entry.status} createdAt={entry.createdAt} t={t} /></td>
                 <td className="cell-reply">{entry.immediateReply || '-'}</td>
+                <td className="cell-reply">{entry.finalReply || '-'}</td>
                 <td>
                   {entry.repliedLink ? (
                     <a href={entry.repliedLink} target="_blank" rel="noopener noreferrer"
                       className="link">{t.view}</a>
                   ) : '-'}
                 </td>
-                <td className="cell-reply">{entry.finalReply || '-'}</td>
                 <td>
                   {entry.evidencePhotos && entry.evidencePhotos.length > 0 ? (
                     <div className="evidence-links">

@@ -720,7 +720,7 @@ router.put('/:id/remark', requireAuth, async (req, res) => {
 router.put('/:id/immediate-reply', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { immediateReply, repliedLink } = req.body;
+    const { immediateReply } = req.body;
     const user = req.user;
 
     if (user.role !== 'district') {
@@ -748,7 +748,6 @@ router.put('/:id/immediate-reply', requireAuth, async (req, res) => {
 
     await db.collection('entries').doc(id).update({
       immediateReply,
-      repliedLink: repliedLink || '',
       status: 'Replied',
       updatedAt: new Date().toISOString()
     });
@@ -764,7 +763,7 @@ router.put('/:id/immediate-reply', requireAuth, async (req, res) => {
 router.put('/:id/final-reply', requireAuth, upload.array('photos', 50), async (req, res) => {
   try {
     const { id } = req.params;
-    const { finalReply } = req.body;
+    const { finalReply, repliedLink } = req.body;
     const user = req.user;
 
     if (user.role !== 'district') {
@@ -801,6 +800,7 @@ router.put('/:id/final-reply', requireAuth, upload.array('photos', 50), async (r
 
     await db.collection('entries').doc(id).update({
       finalReply,
+      repliedLink: repliedLink || '',
       evidencePhotos: photoUrls,
       status: 'Closed',
       updatedAt: new Date().toISOString()

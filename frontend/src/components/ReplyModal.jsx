@@ -29,10 +29,11 @@ export default function ReplyModal({ entry, onClose, onSubmitted }) {
     setSubmitting(true);
     try {
       if (isImmediate) {
-        await api.put(`/entries/${entry.id}/immediate-reply`, { immediateReply: reply, repliedLink });
+        await api.put(`/entries/${entry.id}/immediate-reply`, { immediateReply: reply });
       } else {
         const formData = new FormData();
         formData.append('finalReply', reply);
+        formData.append('repliedLink', repliedLink);
         for (const photo of photos) {
           formData.append('photos', photo);
         }
@@ -75,7 +76,7 @@ export default function ReplyModal({ entry, onClose, onSubmitted }) {
               rows="4" required placeholder={t.replyPlaceholder} />
           </div>
 
-          {isImmediate && (
+          {!isImmediate && (
             <div className="form-group">
               <label>{t.repliedLink}</label>
               <input type="url" value={repliedLink} onChange={e => setRepliedLink(e.target.value)}

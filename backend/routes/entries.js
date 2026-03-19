@@ -554,6 +554,51 @@ router.post('/sync-counter', requireAdmin, async (req, res) => {
   }
 });
 
+// POST /api/entries/resequence - renumber all entries sequentially (admin only)
+router.post('/resequence', requireAdmin, async (req, res) => {
+  try {
+    const snapshot = await db.collection('entries').get();
+    if (snapshot.empty) {
+      await db.collection('counters').doc('entries').set({ count: 0 });
+      return res.json({ message: 'No entries to resequence.', totalEntries: 0, newCount: 0 });
+    }
+
+    // Sort entries by createdAt
+    const entries = [];
+    snapshot.forEach(doc => entries.push({ id: doc.id, ...doc.data() }));
+    entries.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+    // Batch update in groups of 400 (Firestore batch limit is 500)
+    const BATCH_LIMIT = 400;
+    for (let i = 0; i < entries.length; i += BATCH_LIMIT) {
+      const batch = db.batch();
+      const chunk = entries.slice(i, i + BATCH_LIMIT);
+      for (const entry of chunk) {
+        const newSno = entries.indexOf(entry) + 1;
+        const newComplaintId = 'SM-' + String(newSno).padStart(3, '0');
+        batch.update(db.collection('entries').doc(entry.id), {
+          sno: newSno,
+          complaintId: newComplaintId,
+          updatedAt: new Date().toISOString()
+        });
+      }
+      await batch.commit();
+    }
+
+    // Set counter to total entries
+    await db.collection('counters').doc('entries').set({ count: entries.length });
+
+    res.json({
+      message: `Resequenced ${entries.length} entries (SM-001 to SM-${String(entries.length).padStart(3, '0')}).`,
+      totalEntries: entries.length,
+      newCount: entries.length
+    });
+  } catch (err) {
+    console.error('Resequence error:', err);
+    res.status(500).json({ error: 'Failed to resequence entries.' });
+  }
+});
+
 // DELETE /api/entries/:id - delete entry (admin only)
 router.delete('/:id', requireAdmin, async (req, res) => {
   try {

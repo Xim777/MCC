@@ -6,6 +6,7 @@ export default function ReplyModal({ entry, onClose, onSubmitted }) {
   const { t } = useLang();
   const isImmediate = entry.status === 'Pending';
   const [reply, setReply] = useState('');
+  const [repliedLink, setRepliedLink] = useState('');
   const [photos, setPhotos] = useState([]);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -27,7 +28,7 @@ export default function ReplyModal({ entry, onClose, onSubmitted }) {
     setSubmitting(true);
     try {
       if (isImmediate) {
-        await api.put(`/entries/${entry.id}/immediate-reply`, { immediateReply: reply });
+        await api.put(`/entries/${entry.id}/immediate-reply`, { immediateReply: reply, repliedLink });
       } else {
         const formData = new FormData();
         formData.append('finalReply', reply);
@@ -68,6 +69,14 @@ export default function ReplyModal({ entry, onClose, onSubmitted }) {
             <textarea value={reply} onChange={e => setReply(e.target.value)}
               rows="4" required placeholder={t.replyPlaceholder} />
           </div>
+
+          {isImmediate && (
+            <div className="form-group">
+              <label>{t.repliedLink}</label>
+              <input type="url" value={repliedLink} onChange={e => setRepliedLink(e.target.value)}
+                placeholder={t.repliedLinkPlaceholder} />
+            </div>
+          )}
 
           {!isImmediate && (
             <div className="form-group">

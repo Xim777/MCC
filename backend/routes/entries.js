@@ -126,6 +126,7 @@ router.post('/', requireAdmin, async (req, res) => {
         status: 'Pending',
         remark: '',
         immediateReply: '',
+        repliedLink: '',
         finalReply: '',
         evidencePhotos: [],
         createdAt: new Date().toISOString(),
@@ -372,6 +373,7 @@ router.post('/upload-excel', requireAdmin, upload.single('file'), async (req, re
         sourceOfComplaint: mapped.sourceOfComplaint || '',
         status: 'Pending',
         immediateReply: '',
+        repliedLink: '',
         finalReply: '',
         evidencePhotos: [],
         extraData: null,
@@ -536,7 +538,7 @@ router.put('/:id/remark', requireAuth, async (req, res) => {
 router.put('/:id/immediate-reply', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { immediateReply } = req.body;
+    const { immediateReply, repliedLink } = req.body;
     const user = req.user;
 
     if (user.role !== 'district') {
@@ -564,6 +566,7 @@ router.put('/:id/immediate-reply', requireAuth, async (req, res) => {
 
     await db.collection('entries').doc(id).update({
       immediateReply,
+      repliedLink: repliedLink || '',
       status: 'Replied',
       updatedAt: new Date().toISOString()
     });

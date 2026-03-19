@@ -70,6 +70,7 @@ const translations = {
     status: 'Status',
     remark: 'Remark',
     immediateReply: 'Interim Reply',
+    repliedLink: 'Replied Link',
     finalReply: 'Final Reply',
     evidence: 'Evidence',
     actions: 'Actions',
@@ -111,6 +112,7 @@ const translations = {
     photoRequired: 'At least one evidence file is required for final reply.',
     submitting: 'Submitting...',
     submitReply: 'Submit Reply',
+    repliedLinkPlaceholder: 'Paste reply link (optional)',
     filesSelected: 'file(s) selected',
 
     // Remark Modal
@@ -221,6 +223,7 @@ const translations = {
     status: 'நிலை',
     remark: 'குறிப்பு',
     immediateReply: 'இடைக்கால பதில்',
+    repliedLink: 'பதில் இணைப்பு',
     finalReply: 'இறுதி பதில்',
     evidence: 'ஆதாரம்',
     actions: 'செயல்கள்',
@@ -262,6 +265,7 @@ const translations = {
     photoRequired: 'இறுதி பதிலுக்கு குறைந்தது ஒரு ஆதார கோப்பு தேவை.',
     submitting: 'சமர்ப்பிக்கிறது...',
     submitReply: 'பதில் சமர்ப்பி',
+    repliedLinkPlaceholder: 'பதில் இணைப்பை ஒட்டவும் (விருப்பம்)',
     filesSelected: 'கோப்புகள் தேர்ந்தெடுக்கப்பட்டன',
 
     // Remark Modal

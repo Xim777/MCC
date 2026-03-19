@@ -1,23 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLang } from '../context/LangContext';
-import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
 export default function ConstituencyModal({ entry, onClose, onSaved }) {
   const { t } = useLang();
-  const { user } = useAuth();
-  const [constituencies, setConstituencies] = useState([]);
   const [constituency, setConstituency] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (user.districtId) {
-      api.get(`/districts/${user.districtId}/constituencies`)
-        .then(res => setConstituencies(res.data.constituencies))
-        .catch(() => setConstituencies([]));
-    }
-  }, [user.districtId]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -53,12 +42,8 @@ export default function ConstituencyModal({ entry, onClose, onSaved }) {
           {error && <div className="error-msg">{error}</div>}
           <div className="form-group">
             <label>{t.constituencyLabel} *</label>
-            <select value={constituency} onChange={e => setConstituency(e.target.value)} required>
-              <option value="">-- {t.constituencyLabel} --</option>
-              {constituencies.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+            <input type="text" value={constituency} onChange={e => setConstituency(e.target.value)}
+              placeholder={t.constituencyLabel} required />
           </div>
           <div className="form-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose}>{t.cancel}</button>

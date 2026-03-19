@@ -72,7 +72,7 @@ export default function DailyReport() {
 
       <div className="report-print-content">
         <div className="report-header-print">
-          <h2>MCC Violation Tracking Portal</h2>
+          <h2>Social Media Tracker Portal</h2>
           <h3>{t.portalSubtitle}</h3>
           <p>Daily Report - {selectedDate}</p>
         </div>

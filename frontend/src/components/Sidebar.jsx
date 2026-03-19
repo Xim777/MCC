@@ -23,7 +23,7 @@ export default function Sidebar() {
     <>
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <div className="sidebar-logo">MCC</div>
+          <div className="sidebar-logo">SMT</div>
           <div className="sidebar-brand-text">
             <span>{t.sidebarBrand}</span>
             <span className="sidebar-brand-sub">{t.sidebarSub}</span>
@@ -49,7 +49,7 @@ export default function Sidebar() {
           )}
         </nav>
         <div className="sidebar-footer">
-          MCC Violation Tracking Portal
+          Social Media Tracker Portal
         </div>
       </aside>
 

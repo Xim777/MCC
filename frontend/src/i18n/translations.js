@@ -1,7 +1,7 @@
 const translations = {
   en: {
     // Login
-    portalTitle: 'MCC Violation Tracking Portal',
+    portalTitle: 'Social Media Tracker Portal',
     portalSubtitle: 'Election Commission, Tamil Nadu',
     selectRole: 'Select Role',
     admin: 'Admin',
@@ -17,14 +17,14 @@ const translations = {
     loginFailed: 'Login failed. Please try again.',
 
     // Sidebar
-    sidebarBrand: 'MCC Violation Portal',
+    sidebarBrand: 'Social Media Tracker Portal',
     sidebarSub: 'Election Commission, TN',
     dashboard: 'Dashboard',
     entries: 'Complaints',
     reports: 'Reports',
 
     // TopBar
-    topbarTitle: 'MCC Violation Tracking Portal - Election Commission, Tamil Nadu',
+    topbarTitle: 'Social Media Tracker Portal - Election Commission, Tamil Nadu',
     administrator: 'Administrator',
     logout: 'Logout',
 
@@ -154,7 +154,7 @@ const translations = {
 
   ta: {
     // Login
-    portalTitle: 'MCC மீறல் கண்காணிப்பு போர்டல்',
+    portalTitle: 'சமூக ஊடக கண்காணிப்பு போர்டல்',
     portalSubtitle: 'தேர்தல் ஆணையம், தமிழ்நாடு',
     selectRole: 'பதவியை தேர்ந்தெடுக்கவும்',
     admin: 'நிர்வாகி',
@@ -170,14 +170,14 @@ const translations = {
     loginFailed: 'உள்நுழைவு தோல்வி. மீண்டும் முயற்சிக்கவும்.',
 
     // Sidebar
-    sidebarBrand: 'MCC மீறல் போர்டல்',
+    sidebarBrand: 'சமூக ஊடக கண்காணிப்பு போர்டல்',
     sidebarSub: 'தேர்தல் ஆணையம், த.நா.',
     dashboard: 'டாஷ்போர்டு',
     entries: 'புகார்கள்',
     reports: 'அறிக்கைகள்',
 
     // TopBar
-    topbarTitle: 'MCC மீறல் கண்காணிப்பு போர்டல் - தேர்தல் ஆணையம், தமிழ்நாடு',
+    topbarTitle: 'சமூக ஊடக கண்காணிப்பு போர்டல் - தேர்தல் ஆணையம், தமிழ்நாடு',
     administrator: 'நிர்வாகி',
     logout: 'வெளியேறு',
 

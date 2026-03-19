@@ -72,6 +72,7 @@ export default function EntryTable({ entries, user, onDelete, onReply, onFillCon
   const [reportEntry, setReportEntry] = useState(null);
   const [editingTime, setEditingTime] = useState(null);
   const [newTime, setNewTime] = useState('');
+  const [sortField, setSortField] = useState('sno');
   const [sortOrder, setSortOrder] = useState('desc');
   const { t } = useLang();
 
@@ -84,12 +85,27 @@ export default function EntryTable({ entries, user, onDelete, onReply, onFillCon
     } catch { }
   }
 
-  function toggleSort() {
-    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+  function handleSort(field) {
+    if (sortField === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('desc');
+    }
   }
 
+  const sortArrow = (field) => sortField === field ? (sortOrder === 'asc' ? ' \u25B2' : ' \u25BC') : '';
+
   const sortedEntries = [...entries].sort((a, b) => {
-    return sortOrder === 'asc' ? a.sno - b.sno : b.sno - a.sno;
+    let cmp = 0;
+    if (sortField === 'sno') {
+      cmp = a.sno - b.sno;
+    } else if (sortField === 'date') {
+      cmp = new Date(a.entryDate + ' ' + (a.entryTime || '00:00')) - new Date(b.entryDate + ' ' + (b.entryTime || '00:00'));
+    } else if (sortField === 'time') {
+      cmp = (a.entryTime || '').localeCompare(b.entryTime || '');
+    }
+    return sortOrder === 'asc' ? cmp : -cmp;
   });
 
   if (entries.length === 0) {
@@ -106,11 +122,15 @@ export default function EntryTable({ entries, user, onDelete, onReply, onFillCon
         <table className="data-table">
           <thead>
             <tr>
-              <th className="th-sortable" onClick={toggleSort}>
-                {t.complaintId} {sortOrder === 'asc' ? '\u25B2' : '\u25BC'}
+              <th className="th-sortable" onClick={() => handleSort('sno')}>
+                {t.complaintId}{sortArrow('sno')}
               </th>
-              <th>{t.date}</th>
-              <th>{t.time}</th>
+              <th className="th-sortable" onClick={() => handleSort('date')}>
+                {t.date}{sortArrow('date')}
+              </th>
+              <th className="th-sortable" onClick={() => handleSort('time')}>
+                {t.time}{sortArrow('time')}
+              </th>
               {user.role === 'admin' && <th>{t.district}</th>}
               {user.role === 'district' && <th>{t.constituency}</th>}
               <th>{t.gistOfContent}</th>

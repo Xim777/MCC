@@ -46,8 +46,14 @@ export default function Login() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-header">
-          <h2>{t.portalTitle}</h2>
-          <h3>{t.portalSubtitle}</h3>
+          <div className="login-header-logos">
+            <img src="/nvd-logo.png" alt="NVD Logo" className="login-logo" />
+            <div>
+              <h2>{t.portalTitle}</h2>
+              <h3>{t.portalSubtitle}</h3>
+            </div>
+            <img src="/eci-logo.png" alt="ECI Logo" className="login-logo" />
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">

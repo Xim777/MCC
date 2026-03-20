@@ -22,7 +22,7 @@ export default function Sidebar() {
     <>
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <div className="sidebar-logo">SMT</div>
+          <img src="/nvd-logo.png" alt="NVD Logo" className="sidebar-logo-img" />
           <div className="sidebar-brand-text">
             <span>{t.sidebarBrand}</span>
             <span className="sidebar-brand-sub">{t.sidebarSub}</span>

@@ -15,6 +15,7 @@ export default function TopBar() {
   return (
     <header className="topbar">
       <div className="topbar-left">
+        <img src="/eci-logo.png" alt="ECI Logo" className="topbar-logo" />
         <h1 className="topbar-title">{t.topbarTitle}</h1>
       </div>
       <div className="topbar-right">

@@ -8,6 +8,11 @@ const XLSX = require('xlsx');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
+// Stats cache - avoids reading all entries on every dashboard poll
+let statsCache = { data: null, timestamp: 0 };
+const STATS_CACHE_TTL = 15000; // 15 seconds
+function invalidateStatsCache() { statsCache = { data: null, timestamp: 0 }; }
+
 const MEDIA_TYPE_PREFIX = {
   social_media: 'SM',
   print_media: 'PM',
@@ -52,13 +57,21 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
-// GET /api/entries/stats - dashboard analytics
+// GET /api/entries/stats - dashboard analytics (cached)
 router.get('/stats', requireAuth, async (req, res) => {
   try {
     const user = req.user;
-    const snapshot = await db.collection('entries').get();
-    const allEntries = [];
-    snapshot.forEach(doc => allEntries.push(doc.data()));
+    const cacheNow = Date.now();
+
+    let allEntries;
+    if (statsCache.data && (cacheNow - statsCache.timestamp) < STATS_CACHE_TTL) {
+      allEntries = statsCache.data;
+    } else {
+      const snapshot = await db.collection('entries').get();
+      allEntries = [];
+      snapshot.forEach(doc => allEntries.push(doc.data()));
+      statsCache = { data: allEntries, timestamp: cacheNow };
+    }
 
     const now = new Date();
     const TWENTY_FOUR_HRS = 24 * 60 * 60 * 1000;
@@ -164,14 +177,7 @@ router.post('/', requireAdmin, async (req, res) => {
       const counterSnap = await t.get(counterRef);
       const counterVal = counterSnap.exists ? counterSnap.data().count : 0;
 
-      const allSnap = await t.get(db.collection('entries'));
-      let maxSno = 0;
-      allSnap.forEach(doc => {
-        const s = doc.data().sno || 0;
-        if (s > maxSno) maxSno = s;
-      });
-
-      let sno = Math.max(counterVal, maxSno) + 1;
+      let sno = counterVal + 1;
       const complaintId = prefix + '-' + String(sno).padStart(3, '0');
 
       const entryData = {
@@ -202,6 +208,7 @@ router.post('/', requireAdmin, async (req, res) => {
       return { id: entryRef.id, ...entryData };
     });
 
+    invalidateStatsCache();
     res.status(201).json(result);
   } catch (err) {
     console.error('Create entry error:', err);
@@ -550,14 +557,7 @@ router.post('/upload-excel', requireAdmin, upload.single('file'), async (req, re
         const counterSnap = await t.get(counterRef);
         const counterVal = counterSnap.exists ? counterSnap.data().count : 0;
 
-        const allSnap = await t.get(db.collection('entries'));
-        let maxSno = 0;
-        allSnap.forEach(doc => {
-          const s = doc.data().sno || 0;
-          if (s > maxSno) maxSno = s;
-        });
-
-        let sno = Math.max(counterVal, maxSno);
+        let sno = counterVal;
 
         const batchCreated = [];
         for (const entry of batch) {
@@ -574,6 +574,7 @@ router.post('/upload-excel', requireAdmin, upload.single('file'), async (req, re
       created.push(...result);
     }
 
+    invalidateStatsCache();
     res.json({
       message: `${created.length} complaints created. ${skipped.length} duplicates skipped.`,
       created: created.length,
@@ -697,6 +698,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
     }
     await db.collection('counters').doc(GLOBAL_COUNTER).set({ count: entries.length });
 
+    invalidateStatsCache();
     res.json({ message: 'Entry deleted successfully.' });
   } catch (err) {
     console.error('Delete entry error:', err);
@@ -828,6 +830,7 @@ router.put('/:id/immediate-reply', requireAuth, async (req, res) => {
       updatedAt: new Date().toISOString()
     });
 
+    invalidateStatsCache();
     res.json({ message: 'Immediate reply submitted. Status changed to Replied.' });
   } catch (err) {
     console.error('Immediate reply error:', err);
@@ -884,6 +887,7 @@ router.put('/:id/final-reply', requireAuth, upload.array('photos', 50), async (r
       updatedAt: new Date().toISOString()
     });
 
+    invalidateStatsCache();
     res.json({ message: 'Final reply submitted with evidence. Entry closed.' });
   } catch (err) {
     console.error('Final reply error:', err);

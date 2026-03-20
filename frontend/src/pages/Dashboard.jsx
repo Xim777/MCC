@@ -84,6 +84,7 @@ export default function Dashboard() {
 
   const overall = stats?.overall || { total: 0, pending: 0, replied: 0, closed: 0, overdue: 0 };
   const districtStats = stats?.districtStats || {};
+  const mediaTypeStats = stats?.mediaTypeStats || { social_media: { total: 0 }, print_media: { total: 0 }, electronic_media: { total: 0 } };
 
   // Filter districts by search
   const filteredDistricts = Object.entries(DISTRICT_NAMES).filter(([id, name]) =>
@@ -120,6 +121,21 @@ export default function Dashboard() {
         <div className="summary-card card-overdue">
           <div className="summary-number">{overall.overdue}</div>
           <div className="summary-label">{t.overdue}</div>
+        </div>
+      </div>
+
+      <div className="media-type-cards">
+        <div className="media-card media-card-social" onClick={() => navigate('/entries?mediaType=social_media')}>
+          <div className="summary-number">{mediaTypeStats.social_media?.total || 0}</div>
+          <div className="summary-label">{t.socialMedia}</div>
+        </div>
+        <div className="media-card media-card-print" onClick={() => navigate('/entries?mediaType=print_media')}>
+          <div className="summary-number">{mediaTypeStats.print_media?.total || 0}</div>
+          <div className="summary-label">{t.printMedia}</div>
+        </div>
+        <div className="media-card media-card-electronic" onClick={() => navigate('/entries?mediaType=electronic_media')}>
+          <div className="summary-number">{mediaTypeStats.electronic_media?.total || 0}</div>
+          <div className="summary-label">{t.electronicMedia}</div>
         </div>
       </div>
 

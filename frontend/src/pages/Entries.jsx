@@ -50,12 +50,19 @@ const DISTRICT_NAMES = {
   virudhunagar: 'Virudhunagar'
 };
 
+const MEDIA_TYPE_LABELS = {
+  social_media: 'socialMedia',
+  print_media: 'printMedia',
+  electronic_media: 'electronicMedia',
+};
+
 export default function Entries() {
   const { user } = useAuth();
   const { t } = useLang();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const districtFilter = searchParams.get('district');
+  const mediaType = searchParams.get('mediaType');
 
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,7 +75,11 @@ export default function Entries() {
   const fetchEntries = useCallback(async () => {
     try {
       setLoading(true);
-      const url = districtFilter ? `/entries?districtId=${districtFilter}` : '/entries';
+      const params = new URLSearchParams();
+      if (districtFilter) params.set('districtId', districtFilter);
+      if (mediaType) params.set('mediaType', mediaType);
+      const qs = params.toString();
+      const url = qs ? `/entries?${qs}` : '/entries';
       const res = await api.get(url);
       setEntries(res.data.entries);
     } catch (err) {
@@ -76,7 +87,7 @@ export default function Entries() {
     } finally {
       setLoading(false);
     }
-  }, [districtFilter]);
+  }, [districtFilter, mediaType]);
 
   useEffect(() => {
     fetchEntries();
@@ -103,14 +114,30 @@ export default function Entries() {
   }
 
   function clearFilter() {
-    navigate('/entries');
+    if (mediaType) {
+      navigate(`/entries?mediaType=${mediaType}`);
+    } else {
+      navigate('/entries');
+    }
   }
 
+  // Determine if this is a non-social media type (simplified workflow)
+  const isSocialMedia = !mediaType || mediaType === 'social_media';
+
+  // Status filters - hide Overdue for print/electronic media
+  const statusFilters = isSocialMedia
+    ? ['all', 'Pending', 'Replied', 'Closed', 'Overdue']
+    : ['all', 'Pending', 'Closed'];
+
+  const mediaLabel = mediaType && MEDIA_TYPE_LABELS[mediaType] ? t[MEDIA_TYPE_LABELS[mediaType]] : null;
+
   const pageTitle = districtFilter
-    ? `${DISTRICT_NAMES[districtFilter] || districtFilter} - ${t.entries}`
-    : user.role === 'admin'
-      ? t.allEntries
-      : `${user.districtName} - ${t.entries}`;
+    ? `${DISTRICT_NAMES[districtFilter] || districtFilter} - ${mediaLabel || t.entries}`
+    : mediaLabel
+      ? `${mediaLabel} - ${t.entries}`
+      : user.role === 'admin'
+        ? t.allEntries
+        : `${user.districtName} - ${t.entries}`;
 
   return (
     <div className="entries-page">
@@ -136,7 +163,7 @@ export default function Entries() {
       </div>
 
       <div className="filter-bar">
-        {['all', 'Pending', 'Replied', 'Closed', 'Overdue'].map(f => (
+        {statusFilters.map(f => (
           <button
             key={f}
             className={`filter-btn ${statusFilter === f ? 'filter-active' : ''} ${f !== 'all' ? 'filter-' + f.toLowerCase() : ''}`}
@@ -151,6 +178,7 @@ export default function Entries() {
         <ExcelUploadModal
           onClose={() => setShowExcelUpload(false)}
           onUploaded={fetchEntries}
+          mediaType={mediaType || 'social_media'}
         />
       )}
 
@@ -158,6 +186,7 @@ export default function Entries() {
         <EntryForm
           onClose={() => setShowEntryForm(false)}
           onCreated={handleEntryCreated}
+          defaultMediaType={mediaType || 'social_media'}
         />
       )}
 
@@ -193,6 +222,7 @@ export default function Entries() {
           onReply={entry => setReplyModal(entry)}
           onFillConstituency={entry => setConstituencyModal(entry)}
           onRefresh={fetchEntries}
+          mediaType={mediaType}
         />
       )}
     </div>

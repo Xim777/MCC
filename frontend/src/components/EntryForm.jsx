@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLang } from '../context/LangContext';
 import api from '../services/api';
 
-export default function EntryForm({ onClose, onCreated }) {
+export default function EntryForm({ onClose, onCreated, defaultMediaType }) {
   const { t } = useLang();
   const [districts, setDistricts] = useState([]);
   const [form, setForm] = useState({
@@ -11,7 +11,8 @@ export default function EntryForm({ onClose, onCreated }) {
     entryTime: new Date().toTimeString().slice(0, 5),
     districtId: '',
     gist: '',
-    sourceOfComplaint: ''
+    sourceOfComplaint: '',
+    mediaType: defaultMediaType || 'social_media'
   });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -31,7 +32,6 @@ export default function EntryForm({ onClose, onCreated }) {
     if (!form.entryDate || !form.entryTime || !form.districtId ||
         !form.gist || !form.sourceOfComplaint) {
       setError(t.allFieldsRequired);
-      // Note: constituency is optional for admin - district fills it
       return;
     }
 
@@ -56,6 +56,15 @@ export default function EntryForm({ onClose, onCreated }) {
 
         <form onSubmit={handleSubmit} className="entry-form">
           {error && <div className="error-msg">{error}</div>}
+
+          <div className="form-group">
+            <label>{t.mediaTypeLabel} *</label>
+            <select name="mediaType" value={form.mediaType} onChange={handleChange} required>
+              <option value="social_media">{t.socialMedia}</option>
+              <option value="print_media">{t.printMedia}</option>
+              <option value="electronic_media">{t.electronicMedia}</option>
+            </select>
+          </div>
 
           <div className="form-row">
             <div className="form-group">

@@ -18,18 +18,33 @@ const DISTRICT_NAMES = {
   vellore: 'Vellore', viluppuram: 'Viluppuram', virudhunagar: 'Virudhunagar'
 };
 
+const MEDIA_TYPE_OPTIONS = [
+  { value: '', label: 'all' },
+  { value: 'social_media', label: 'socialMedia' },
+  { value: 'print_media', label: 'printMedia' },
+  { value: 'electronic_media', label: 'electronicMedia' },
+];
+
 export default function DailyReport() {
   const { t } = useLang();
-  const [entries, setEntries] = useState([]);
+  const [allEntries, setAllEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [mediaTypeFilter, setMediaTypeFilter] = useState('');
 
   useEffect(() => {
     api.get('/entries')
-      .then(res => setEntries(res.data.entries))
+      .then(res => setAllEntries(res.data.entries))
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
   }, []);
+
+  // Filter entries by media type
+  const entries = mediaTypeFilter
+    ? allEntries.filter(e => (e.mediaType || 'social_media') === mediaTypeFilter)
+    : allEntries;
+
+  const isSocialView = !mediaTypeFilter || mediaTypeFilter === 'social_media';
 
   const dayEntries = entries.filter(e => e.entryDate === selectedDate);
 
@@ -38,7 +53,9 @@ export default function DailyReport() {
   const pendingDay = dayEntries.filter(e => e.status === 'Pending').length;
   const repliedDay = dayEntries.filter(e => e.status === 'Replied').length;
   const closedDay = dayEntries.filter(e => e.status === 'Closed').length;
-  const overdueDay = dayEntries.filter(e => e.status !== 'Closed' && (Date.now() - new Date(e.createdAt).getTime()) >= 24*60*60*1000).length;
+  const overdueDay = isSocialView
+    ? dayEntries.filter(e => e.status !== 'Closed' && (Date.now() - new Date(e.createdAt).getTime()) >= 24*60*60*1000).length
+    : 0;
 
   const districtWise = {};
   dayEntries.forEach(e => {
@@ -57,6 +74,10 @@ export default function DailyReport() {
     window.print();
   }
 
+  const mediaLabel = mediaTypeFilter
+    ? t[MEDIA_TYPE_OPTIONS.find(o => o.value === mediaTypeFilter)?.label] || ''
+    : '';
+
   if (loading) return <div className="loading">Loading...</div>;
 
   return (
@@ -64,6 +85,17 @@ export default function DailyReport() {
       <div className="page-header no-print">
         <div className="page-header-left">
           <h2 className="page-title">{t.report}</h2>
+          <select
+            value={mediaTypeFilter}
+            onChange={e => setMediaTypeFilter(e.target.value)}
+            className="date-picker"
+          >
+            {MEDIA_TYPE_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>
+                {opt.value === '' ? t.allComplaints : t[opt.label]}
+              </option>
+            ))}
+          </select>
           <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
             className="date-picker" />
         </div>
@@ -74,7 +106,7 @@ export default function DailyReport() {
         <div className="report-header-print">
           <h2>Social Media Tracker Portal</h2>
           <h3>{t.portalSubtitle}</h3>
-          <p>Daily Report - {selectedDate}</p>
+          <p>Daily Report - {selectedDate}{mediaLabel ? ` (${mediaLabel})` : ''}</p>
         </div>
 
         <div className="report-summary">
@@ -82,18 +114,24 @@ export default function DailyReport() {
           <div className="report-summary-grid">
             <div className="rs-item"><span className="rs-num">{totalDay}</span><span className="rs-label">{t.totalComplaints}</span></div>
             <div className="rs-item rs-pending"><span className="rs-num">{pendingDay}</span><span className="rs-label">{t.pending}</span></div>
-            <div className="rs-item rs-replied"><span className="rs-num">{repliedDay}</span><span className="rs-label">{t.replied}</span></div>
+            {isSocialView && (
+              <div className="rs-item rs-replied"><span className="rs-num">{repliedDay}</span><span className="rs-label">{t.replied}</span></div>
+            )}
             <div className="rs-item rs-closed"><span className="rs-num">{closedDay}</span><span className="rs-label">{t.closed}</span></div>
-            <div className="rs-item rs-overdue"><span className="rs-num">{overdueDay}</span><span className="rs-label">{t.overdue}</span></div>
+            {isSocialView && (
+              <div className="rs-item rs-overdue"><span className="rs-num">{overdueDay}</span><span className="rs-label">{t.overdue}</span></div>
+            )}
           </div>
         </div>
 
         <div className="report-summary">
-          <h3>Cumulative Summary (All Time)</h3>
+          <h3>Cumulative Summary (All Time){mediaLabel ? ` - ${mediaLabel}` : ''}</h3>
           <div className="report-summary-grid">
             <div className="rs-item"><span className="rs-num">{totalAll}</span><span className="rs-label">{t.totalComplaints}</span></div>
             <div className="rs-item rs-pending"><span className="rs-num">{overallPending}</span><span className="rs-label">{t.pending}</span></div>
-            <div className="rs-item rs-replied"><span className="rs-num">{overallReplied}</span><span className="rs-label">{t.replied}</span></div>
+            {isSocialView && (
+              <div className="rs-item rs-replied"><span className="rs-num">{overallReplied}</span><span className="rs-label">{t.replied}</span></div>
+            )}
             <div className="rs-item rs-closed"><span className="rs-num">{overallClosed}</span><span className="rs-label">{t.closed}</span></div>
           </div>
         </div>
@@ -108,7 +146,7 @@ export default function DailyReport() {
                   <th>{t.district}</th>
                   <th>{t.totalComplaints}</th>
                   <th>{t.pending}</th>
-                  <th>{t.replied}</th>
+                  {isSocialView && <th>{t.replied}</th>}
                   <th>{t.closed}</th>
                 </tr>
               </thead>
@@ -121,7 +159,7 @@ export default function DailyReport() {
                     <td>{DISTRICT_NAMES[did] || did}</td>
                     <td>{ds.total}</td>
                     <td>{ds.pending > 0 ? ds.pending : '-'}</td>
-                    <td>{ds.replied > 0 ? ds.replied : '-'}</td>
+                    {isSocialView && <td>{ds.replied > 0 ? ds.replied : '-'}</td>}
                     <td>{ds.closed > 0 ? ds.closed : '-'}</td>
                   </tr>
                 ))}
@@ -143,7 +181,7 @@ export default function DailyReport() {
                   <th>{t.gistOfContent}</th>
                   <th>{t.source}</th>
                   <th>{t.status}</th>
-                  <th>{t.immediateReply}</th>
+                  {isSocialView && <th>{t.immediateReply}</th>}
                   <th>{t.finalReply}</th>
                 </tr>
               </thead>
@@ -159,7 +197,7 @@ export default function DailyReport() {
                         {entry.status === 'Pending' ? t.pending : entry.status === 'Replied' ? t.replied : t.closed}
                       </span>
                     </td>
-                    <td>{entry.immediateReply || '-'}</td>
+                    {isSocialView && <td>{entry.immediateReply || '-'}</td>}
                     <td>{entry.finalReply || '-'}</td>
                   </tr>
                 ))}

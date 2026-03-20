@@ -22,6 +22,11 @@ const translations = {
     dashboard: 'Dashboard',
     entries: 'Complaints',
     reports: 'Reports',
+    complaintDetection: 'Complaint Detection',
+    socialMedia: 'Social Media',
+    printMedia: 'Print Media',
+    electronicMedia: 'Electronic Media',
+    allComplaints: 'All Complaints',
 
     // TopBar
     topbarTitle: 'Social Media Tracker Portal - Election Commission, Tamil Nadu',
@@ -89,6 +94,8 @@ const translations = {
     constituencyLabel: 'Assembly Constituency',
     gistLabel: 'Gist of Content',
     sourceLabel: 'Source of Complaint',
+    mediaTypeLabel: 'Media Type',
+    selectMediaType: 'Select Media Type',
     sourcePlaceholder: 'e.g., Social Media, News Channel, Newspaper...',
     gistPlaceholder: 'Brief description of the content...',
     cancel: 'Cancel',
@@ -175,6 +182,11 @@ const translations = {
     dashboard: 'டாஷ்போர்டு',
     entries: 'புகார்கள்',
     reports: 'அறிக்கைகள்',
+    complaintDetection: 'புகார் கண்டறிதல்',
+    socialMedia: 'சமூக ஊடகம்',
+    printMedia: 'அச்சு ஊடகம்',
+    electronicMedia: 'மின்னணு ஊடகம்',
+    allComplaints: 'அனைத்து புகார்கள்',
 
     // TopBar
     topbarTitle: 'சமூக ஊடக கண்காணிப்பு போர்டல் - தேர்தல் ஆணையம், தமிழ்நாடு',
@@ -242,6 +254,8 @@ const translations = {
     constituencyLabel: 'சட்டமன்ற தொகுதி',
     gistLabel: 'உள்ளடக்க சுருக்கம்',
     sourceLabel: 'புகார் ஆதாரம்',
+    mediaTypeLabel: 'ஊடக வகை',
+    selectMediaType: 'ஊடக வகையை தேர்ந்தெடுக்கவும்',
     sourcePlaceholder: 'எ.கா., சமூக ஊடகம், செய்தி சேனல், செய்தித்தாள்...',
     gistPlaceholder: 'உள்ளடக்கத்தின் சுருக்க விவரம்...',
     cancel: 'ரத்து',

@@ -8,6 +8,12 @@ const XLSX = require('xlsx');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
+const MEDIA_TYPE_CONFIG = {
+  social_media: { prefix: 'SM', counter: 'entries' },
+  print_media: { prefix: 'PM', counter: 'entries_print_media' },
+  electronic_media: { prefix: 'EM', counter: 'entries_electronic_media' },
+};
+
 // GET /api/entries - get all entries (filtered by district for district users)
 router.get('/', requireAuth, async (req, res) => {
   try {
@@ -29,10 +35,16 @@ router.get('/', requireAuth, async (req, res) => {
       entries.push({ id: doc.id, ...doc.data() });
     });
 
-    // Sort client-side to avoid composite index requirement
-    entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    // Filter by mediaType if specified
+    const mediaTypeFilter = req.query.mediaType;
+    const filtered = mediaTypeFilter
+      ? entries.filter(e => (e.mediaType || 'social_media') === mediaTypeFilter)
+      : entries;
 
-    res.json({ entries });
+    // Sort client-side to avoid composite index requirement
+    filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json({ entries: filtered });
   } catch (err) {
     console.error('Get entries error:', err);
     res.status(500).json({ error: 'Failed to fetch entries.' });
@@ -76,7 +88,14 @@ router.get('/stats', requireAuth, async (req, res) => {
         overdue: allEntries.filter(e => e.status !== 'Closed' && (now - new Date(e.createdAt)) >= TWENTY_FOUR_HRS).length
       };
 
-      res.json({ overall, districtStats });
+      // Media type breakdown
+      const mediaTypeStats = { social_media: { total: 0 }, print_media: { total: 0 }, electronic_media: { total: 0 } };
+      allEntries.forEach(entry => {
+        const mt = entry.mediaType || 'social_media';
+        if (mediaTypeStats[mt]) mediaTypeStats[mt].total++;
+      });
+
+      res.json({ overall, districtStats, mediaTypeStats });
     } else {
       // Single district stats
       const myEntries = allEntries.filter(e => e.districtId === user.districtId);
@@ -87,7 +106,12 @@ router.get('/stats', requireAuth, async (req, res) => {
         closed: myEntries.filter(e => e.status === 'Closed').length,
         overdue: myEntries.filter(e => e.status !== 'Closed' && (now - new Date(e.createdAt)) >= TWENTY_FOUR_HRS).length
       };
-      res.json({ overall: stats, districtStats: {} });
+      const mediaTypeStats = { social_media: { total: 0 }, print_media: { total: 0 }, electronic_media: { total: 0 } };
+      myEntries.forEach(entry => {
+        const mt = entry.mediaType || 'social_media';
+        if (mediaTypeStats[mt]) mediaTypeStats[mt].total++;
+      });
+      res.json({ overall: stats, districtStats: {}, mediaTypeStats });
     }
   } catch (err) {
     console.error('Stats error:', err);
@@ -98,32 +122,42 @@ router.get('/stats', requireAuth, async (req, res) => {
 // POST /api/entries - create new entry (admin only)
 router.post('/', requireAdmin, async (req, res) => {
   try {
-    const { newsLink, entryDate, entryTime, districtId, constituency, gist, sourceOfComplaint } = req.body;
+    const { newsLink, entryDate, entryTime, districtId, constituency, gist, sourceOfComplaint, mediaType: reqMediaType } = req.body;
 
     if (!entryDate || !entryTime || !districtId || !gist || !sourceOfComplaint) {
       return res.status(400).json({ error: 'All fields except News Link and Constituency are required.' });
     }
 
+    const mediaType = reqMediaType || 'social_media';
+    const mtConfig = MEDIA_TYPE_CONFIG[mediaType];
+    if (!mtConfig) {
+      return res.status(400).json({ error: 'Invalid media type.' });
+    }
+
     // Auto-generate complaint ID using a Firestore transaction to prevent race conditions
     // Syncs counter with actual max sno in entries to handle drift from deletions
     const result = await db.runTransaction(async (t) => {
-      const counterRef = db.collection('counters').doc('entries');
+      const counterRef = db.collection('counters').doc(mtConfig.counter);
       const counterSnap = await t.get(counterRef);
       const counterVal = counterSnap.exists ? counterSnap.data().count : 0;
 
       const allSnap = await t.get(db.collection('entries'));
       let maxSno = 0;
       allSnap.forEach(doc => {
-        const s = doc.data().sno || 0;
-        if (s > maxSno) maxSno = s;
+        const d = doc.data();
+        if ((d.mediaType || 'social_media') === mediaType) {
+          const s = d.sno || 0;
+          if (s > maxSno) maxSno = s;
+        }
       });
 
       let sno = Math.max(counterVal, maxSno) + 1;
-      const complaintId = 'SM-' + String(sno).padStart(3, '0');
+      const complaintId = mtConfig.prefix + '-' + String(sno).padStart(3, '0');
 
       const entryData = {
         sno,
         complaintId,
+        mediaType,
         newsLink: newsLink || '',
         entryDate,
         entryTime,
@@ -159,6 +193,12 @@ router.post('/', requireAdmin, async (req, res) => {
 router.post('/upload-excel', requireAdmin, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
+
+    const mediaType = req.body.mediaType || 'social_media';
+    const mtConfig = MEDIA_TYPE_CONFIG[mediaType];
+    if (!mtConfig) {
+      return res.status(400).json({ error: 'Invalid media type.' });
+    }
 
     const workbook = XLSX.read(req.file.buffer, { type: 'buffer', cellDates: true });
     const sheetName = workbook.SheetNames[0];
@@ -455,6 +495,7 @@ router.post('/upload-excel', requireAdmin, upload.single('file'), async (req, re
 
       // Collect valid entry data (sno and complaintId assigned in transaction)
       validEntries.push({
+        mediaType,
         newsLink: mapped.newsLink || '',
         entryDate: formatDate(mapped.entryDate) || new Date().toISOString().split('T')[0],
         entryTime: mapped.entryTime || new Date().toTimeString().slice(0, 5),
@@ -485,15 +526,18 @@ router.post('/upload-excel', requireAdmin, upload.single('file'), async (req, re
 
     for (const batch of batches) {
       const result = await db.runTransaction(async (t) => {
-        const counterRef = db.collection('counters').doc('entries');
+        const counterRef = db.collection('counters').doc(mtConfig.counter);
         const counterSnap = await t.get(counterRef);
         const counterVal = counterSnap.exists ? counterSnap.data().count : 0;
 
         const allSnap = await t.get(db.collection('entries'));
         let maxSno = 0;
         allSnap.forEach(doc => {
-          const s = doc.data().sno || 0;
-          if (s > maxSno) maxSno = s;
+          const d = doc.data();
+          if ((d.mediaType || 'social_media') === mediaType) {
+            const s = d.sno || 0;
+            if (s > maxSno) maxSno = s;
+          }
         });
 
         let sno = Math.max(counterVal, maxSno);
@@ -502,7 +546,7 @@ router.post('/upload-excel', requireAdmin, upload.single('file'), async (req, re
         for (const entry of batch) {
           sno++;
           entry.sno = sno;
-          entry.complaintId = 'SM-' + String(sno).padStart(3, '0');
+          entry.complaintId = mtConfig.prefix + '-' + String(sno).padStart(3, '0');
           const ref = db.collection('entries').doc();
           t.set(ref, entry);
           batchCreated.push(entry.complaintId);
@@ -526,26 +570,33 @@ router.post('/upload-excel', requireAdmin, upload.single('file'), async (req, re
   }
 });
 
-// POST /api/entries/sync-counter - sync counter with actual max sno in entries (admin only)
+// POST /api/entries/sync-counter - sync counters per media type with actual max sno (admin only)
 router.post('/sync-counter', requireAdmin, async (req, res) => {
   try {
     const snapshot = await db.collection('entries').get();
-    let maxSno = 0;
-    snapshot.forEach(doc => {
-      const s = doc.data().sno || 0;
-      if (s > maxSno) maxSno = s;
-    });
+    const allEntries = [];
+    snapshot.forEach(doc => allEntries.push(doc.data()));
 
-    const counterRef = db.collection('counters').doc('entries');
-    const counterSnap = await counterRef.get();
-    const oldCount = counterSnap.exists ? counterSnap.data().count : 0;
+    const results = {};
+    for (const [mt, cfg] of Object.entries(MEDIA_TYPE_CONFIG)) {
+      let maxSno = 0;
+      allEntries.forEach(e => {
+        if ((e.mediaType || 'social_media') === mt) {
+          const s = e.sno || 0;
+          if (s > maxSno) maxSno = s;
+        }
+      });
 
-    await counterRef.set({ count: maxSno });
+      const counterRef = db.collection('counters').doc(cfg.counter);
+      const counterSnap = await counterRef.get();
+      const oldCount = counterSnap.exists ? counterSnap.data().count : 0;
+      await counterRef.set({ count: maxSno });
+      results[mt] = { previousCount: oldCount, newCount: maxSno };
+    }
 
     res.json({
-      message: 'Counter synced.',
-      previousCount: oldCount,
-      newCount: maxSno,
+      message: 'All counters synced.',
+      results,
       totalEntries: snapshot.size
     });
   } catch (err) {
@@ -554,44 +605,53 @@ router.post('/sync-counter', requireAdmin, async (req, res) => {
   }
 });
 
-// POST /api/entries/resequence - renumber all entries sequentially (admin only)
+// POST /api/entries/resequence - renumber all entries sequentially per media type (admin only)
 router.post('/resequence', requireAdmin, async (req, res) => {
   try {
     const snapshot = await db.collection('entries').get();
     if (snapshot.empty) {
-      await db.collection('counters').doc('entries').set({ count: 0 });
+      for (const cfg of Object.values(MEDIA_TYPE_CONFIG)) {
+        await db.collection('counters').doc(cfg.counter).set({ count: 0 });
+      }
       return res.json({ message: 'No entries to resequence.', totalEntries: 0, newCount: 0 });
     }
 
-    // Sort entries by createdAt
-    const entries = [];
-    snapshot.forEach(doc => entries.push({ id: doc.id, ...doc.data() }));
-    entries.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    const allEntries = [];
+    snapshot.forEach(doc => allEntries.push({ id: doc.id, ...doc.data() }));
 
-    // Batch update in groups of 400 (Firestore batch limit is 500)
-    const BATCH_LIMIT = 400;
-    for (let i = 0; i < entries.length; i += BATCH_LIMIT) {
-      const batch = db.batch();
-      const chunk = entries.slice(i, i + BATCH_LIMIT);
-      for (const entry of chunk) {
-        const newSno = entries.indexOf(entry) + 1;
-        const newComplaintId = 'SM-' + String(newSno).padStart(3, '0');
-        batch.update(db.collection('entries').doc(entry.id), {
-          sno: newSno,
-          complaintId: newComplaintId,
-          updatedAt: new Date().toISOString()
-        });
+    let totalResequenced = 0;
+
+    // Resequence per media type
+    for (const [mt, cfg] of Object.entries(MEDIA_TYPE_CONFIG)) {
+      const entries = allEntries
+        .filter(e => (e.mediaType || 'social_media') === mt)
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+      const BATCH_LIMIT = 400;
+      for (let i = 0; i < entries.length; i += BATCH_LIMIT) {
+        const batch = db.batch();
+        const chunk = entries.slice(i, i + BATCH_LIMIT);
+        for (let j = 0; j < chunk.length; j++) {
+          const newSno = i + j + 1;
+          const newComplaintId = cfg.prefix + '-' + String(newSno).padStart(3, '0');
+          batch.update(db.collection('entries').doc(chunk[j].id), {
+            sno: newSno,
+            complaintId: newComplaintId,
+            mediaType: mt,
+            updatedAt: new Date().toISOString()
+          });
+        }
+        await batch.commit();
       }
-      await batch.commit();
+
+      await db.collection('counters').doc(cfg.counter).set({ count: entries.length });
+      totalResequenced += entries.length;
     }
 
-    // Set counter to total entries
-    await db.collection('counters').doc('entries').set({ count: entries.length });
-
     res.json({
-      message: `Resequenced ${entries.length} entries (SM-001 to SM-${String(entries.length).padStart(3, '0')}).`,
-      totalEntries: entries.length,
-      newCount: entries.length
+      message: `Resequenced ${totalResequenced} entries across all media types.`,
+      totalEntries: totalResequenced,
+      newCount: totalResequenced
     });
   } catch (err) {
     console.error('Resequence error:', err);
@@ -608,14 +668,23 @@ router.delete('/:id', requireAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Entry not found.' });
     }
 
+    const deletedEntry = doc.data();
+    const mediaType = deletedEntry.mediaType || 'social_media';
+    const mtConfig = MEDIA_TYPE_CONFIG[mediaType];
+
     // Delete associated photos from storage
     await deleteEntryPhotos(id);
     await db.collection('entries').doc(id).delete();
 
-    // Resequence all remaining entries so IDs stay continuous (SM-001, SM-002, ...)
+    // Resequence remaining entries of same media type so IDs stay continuous
     const remaining = await db.collection('entries').get();
     const entries = [];
-    remaining.forEach(d => entries.push({ id: d.id, ...d.data() }));
+    remaining.forEach(d => {
+      const data = d.data();
+      if ((data.mediaType || 'social_media') === mediaType) {
+        entries.push({ id: d.id, ...data });
+      }
+    });
     entries.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
     const BATCH_LIMIT = 400;
@@ -626,12 +695,12 @@ router.delete('/:id', requireAdmin, async (req, res) => {
         const newSno = i + j + 1;
         batch.update(db.collection('entries').doc(chunk[j].id), {
           sno: newSno,
-          complaintId: 'SM-' + String(newSno).padStart(3, '0')
+          complaintId: mtConfig.prefix + '-' + String(newSno).padStart(3, '0')
         });
       }
       await batch.commit();
     }
-    await db.collection('counters').doc('entries').set({ count: entries.length });
+    await db.collection('counters').doc(mtConfig.counter).set({ count: entries.length });
 
     res.json({ message: 'Entry deleted successfully.' });
   } catch (err) {
@@ -793,7 +862,9 @@ router.put('/:id/final-reply', requireAuth, upload.array('photos', 50), async (r
       return res.status(403).json({ error: 'Access denied.' });
     }
 
-    if (entry.status !== 'Replied') {
+    const entryMediaType = entry.mediaType || 'social_media';
+    const allowedStatuses = entryMediaType === 'social_media' ? ['Replied'] : ['Pending', 'Replied'];
+    if (!allowedStatuses.includes(entry.status)) {
       return res.status(400).json({ error: 'Final reply can only be submitted for replied entries.' });
     }
 

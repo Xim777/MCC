@@ -148,6 +148,34 @@ body {
   border-left: 3px solid var(--teal-light);
 }
 
+.sidebar-parent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-arrow {
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+.sidebar-sub-links {
+  display: flex;
+  flex-direction: column;
+  background: rgba(0,0,0,0.15);
+}
+
+.sidebar-sub-link {
+  padding: 10px 20px 10px 38px !important;
+  font-size: 13px !important;
+  border-left: 2px solid transparent !important;
+}
+
+.sidebar-sub-link.active {
+  border-left: 2px solid var(--teal-light) !important;
+  background: rgba(13,115,119,0.3) !important;
+}
+
 .sidebar-footer {
   padding: 16px;
   font-size: 11px;
@@ -481,6 +509,34 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
+
+/* ========== MEDIA TYPE CARDS ========== */
+.media-type-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.media-card {
+  background: var(--white);
+  border-radius: 8px;
+  padding: 20px 16px;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border-left: 4px solid var(--teal);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.media-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.media-card-social { border-left-color: #6366f1; }
+.media-card-print { border-left-color: #f59e0b; }
+.media-card-electronic { border-left-color: #ec4899; }
 
 /* ========== DISTRICT LIST (Admin Dashboard) ========== */
 .district-list-header {
@@ -1072,6 +1128,8 @@ body {
   .sidebar-brand-text, .sidebar-footer { display: none; }
   .sidebar-brand { justify-content: center; padding: 16px 8px; }
   .sidebar-link { padding: 14px 8px; font-size: 11px; text-align: center; }
+  .sidebar-sub-links { display: none; }
+  .sidebar-arrow { display: none; }
   .app-main { margin-left: 60px; }
 
   .topbar { padding: 10px 16px; }
@@ -1079,6 +1137,7 @@ body {
   .app-content { padding: 16px; }
 
   .summary-cards { grid-template-columns: repeat(3, 1fr); }
+  .media-type-cards { grid-template-columns: repeat(3, 1fr); }
   .form-row { grid-template-columns: 1fr; }
   .signature-line { flex-direction: column; gap: 24px; }
 
@@ -1110,6 +1169,8 @@ body {
 
   .sidebar-brand { display: none; }
   .sidebar-footer { display: none; }
+  .sidebar-sub-links { display: none; }
+  .sidebar-arrow { display: none; }
 
   .sidebar-nav {
     flex-direction: row;
@@ -1166,6 +1227,11 @@ body {
 
   .summary-cards {
     grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .media-type-cards {
+    grid-template-columns: 1fr;
     gap: 10px;
   }
 

@@ -10,14 +10,11 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const { t } = useLang();
   const [showChangePwd, setShowChangePwd] = useState(false);
+  const [cdOpen, setCdOpen] = useState(true);
 
-  const links = [
-    { path: '/dashboard', label: t.dashboard },
-    { path: '/entries', label: t.entries },
-    ...(user.role === 'admin' ? [
-      { path: '/report', label: t.report },
-    ] : []),
-  ];
+  const fullPath = location.pathname + location.search;
+  const isOnEntries = location.pathname === '/entries';
+  const currentMediaType = new URLSearchParams(location.search).get('mediaType');
 
   return (
     <>
@@ -30,15 +27,53 @@ export default function Sidebar() {
           </div>
         </div>
         <nav className="sidebar-nav">
-          {links.map(link => (
+          <button
+            className={`sidebar-link ${location.pathname === '/dashboard' ? 'active' : ''}`}
+            onClick={() => navigate('/dashboard')}
+          >
+            {t.dashboard}
+          </button>
+
+          {/* All Complaints as parent with expand/collapse */}
+          <button
+            className={`sidebar-link sidebar-parent ${isOnEntries && !currentMediaType ? 'active' : ''}`}
+            onClick={() => { navigate('/entries'); setCdOpen(prev => !prev); }}
+          >
+            <span>{t.allComplaints}</span>
+            <span className="sidebar-arrow">{cdOpen ? '\u25BC' : '\u25B6'}</span>
+          </button>
+          {cdOpen && (
+            <div className="sidebar-sub-links">
+              <button
+                className={`sidebar-link sidebar-sub-link ${isOnEntries && currentMediaType === 'social_media' ? 'active' : ''}`}
+                onClick={() => navigate('/entries?mediaType=social_media')}
+              >
+                {t.socialMedia}
+              </button>
+              <button
+                className={`sidebar-link sidebar-sub-link ${isOnEntries && currentMediaType === 'print_media' ? 'active' : ''}`}
+                onClick={() => navigate('/entries?mediaType=print_media')}
+              >
+                {t.printMedia}
+              </button>
+              <button
+                className={`sidebar-link sidebar-sub-link ${isOnEntries && currentMediaType === 'electronic_media' ? 'active' : ''}`}
+                onClick={() => navigate('/entries?mediaType=electronic_media')}
+              >
+                {t.electronicMedia}
+              </button>
+            </div>
+          )}
+
+          {user.role === 'admin' && (
             <button
-              key={link.path}
-              className={`sidebar-link ${location.pathname === link.path ? 'active' : ''}`}
-              onClick={() => navigate(link.path)}
+              className={`sidebar-link ${location.pathname === '/report' ? 'active' : ''}`}
+              onClick={() => navigate('/report')}
             >
-              {link.label}
+              {t.report}
             </button>
-          ))}
+          )}
+
           {user.role === 'district' && (
             <button
               className="sidebar-link"

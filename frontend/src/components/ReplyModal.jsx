@@ -4,7 +4,10 @@ import api from '../services/api';
 
 export default function ReplyModal({ entry, onClose, onSubmitted }) {
   const { t } = useLang();
-  const isImmediate = entry.status === 'Pending';
+  const entrySocial = !entry.mediaType || entry.mediaType === 'social_media';
+  // For social media: Pending → immediate reply, Replied → final reply
+  // For print/electronic: Pending → final reply directly (skip immediate)
+  const isImmediate = entrySocial && entry.status === 'Pending';
   const [reply, setReply] = useState('');
   const [repliedLink, setRepliedLink] = useState('');
   const [photos, setPhotos] = useState([]);

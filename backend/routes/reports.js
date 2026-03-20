@@ -8,7 +8,6 @@ router.get('/', requireAdmin, async (req, res) => {
   try {
     const snapshot = await db.collection('entries')
       .where('status', '==', 'Closed')
-      .orderBy('sno', 'asc')
       .get();
 
     const entries = [];
@@ -16,7 +15,16 @@ router.get('/', requireAdmin, async (req, res) => {
       entries.push({ id: doc.id, ...doc.data() });
     });
 
-    res.json({ entries });
+    // Filter by mediaType if specified
+    const mediaTypeFilter = req.query.mediaType;
+    const filtered = mediaTypeFilter
+      ? entries.filter(e => (e.mediaType || 'social_media') === mediaTypeFilter)
+      : entries;
+
+    // Sort by sno
+    filtered.sort((a, b) => a.sno - b.sno);
+
+    res.json({ entries: filtered });
   } catch (err) {
     console.error('Reports error:', err);
     res.status(500).json({ error: 'Failed to fetch report data.' });

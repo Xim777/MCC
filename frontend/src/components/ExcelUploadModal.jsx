@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLang } from '../context/LangContext';
 import api from '../services/api';
 
-export default function ExcelUploadModal({ onClose, onUploaded }) {
+export default function ExcelUploadModal({ onClose, onUploaded, mediaType }) {
   const { t } = useLang();
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -20,6 +20,7 @@ export default function ExcelUploadModal({ onClose, onUploaded }) {
     try {
       const formData = new FormData();
       formData.append('file', file);
+      if (mediaType) formData.append('mediaType', mediaType);
       const res = await api.post('/entries/upload-excel', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });

@@ -63,6 +63,7 @@ export default function Entries() {
   const navigate = useNavigate();
   const districtFilter = searchParams.get('district');
   const mediaType = searchParams.get('mediaType');
+  const statusFromUrl = searchParams.get('status');
 
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +71,7 @@ export default function Entries() {
   const [replyModal, setReplyModal] = useState(null);
   const [constituencyModal, setConstituencyModal] = useState(null);
   const [showExcelUpload, setShowExcelUpload] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState(statusFromUrl || 'all');
 
   const fetchEntries = useCallback(async () => {
     try {

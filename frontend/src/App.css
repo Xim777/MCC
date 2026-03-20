@@ -489,6 +489,16 @@ body {
   border-left: 4px solid var(--gray-300);
 }
 
+.summary-card.clickable {
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.summary-card.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
 .summary-card.card-total { border-left-color: var(--navy); }
 .summary-card.card-pending { border-left-color: var(--yellow); }
 .summary-card.card-replied { border-left-color: var(--blue); }

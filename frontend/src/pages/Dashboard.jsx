@@ -102,23 +102,23 @@ export default function Dashboard() {
       </h2>
 
       <div className="summary-cards">
-        <div className="summary-card card-total">
+        <div className="summary-card card-total clickable" onClick={() => navigate('/entries')}>
           <div className="summary-number">{overall.total}</div>
           <div className="summary-label">{t.totalEntries}</div>
         </div>
-        <div className="summary-card card-pending">
+        <div className="summary-card card-pending clickable" onClick={() => navigate('/entries?status=Pending')}>
           <div className="summary-number">{overall.pending}</div>
           <div className="summary-label">{t.pending}</div>
         </div>
-        <div className="summary-card card-replied">
+        <div className="summary-card card-replied clickable" onClick={() => navigate('/entries?status=Replied')}>
           <div className="summary-number">{overall.replied}</div>
           <div className="summary-label">{t.replied}</div>
         </div>
-        <div className="summary-card card-closed">
+        <div className="summary-card card-closed clickable" onClick={() => navigate('/entries?status=Closed')}>
           <div className="summary-number">{overall.closed}</div>
           <div className="summary-label">{t.closed}</div>
         </div>
-        <div className="summary-card card-overdue">
+        <div className="summary-card card-overdue clickable" onClick={() => navigate('/entries?status=Overdue')}>
           <div className="summary-number">{overall.overdue}</div>
           <div className="summary-label">{t.overdue}</div>
         </div>

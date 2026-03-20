@@ -895,4 +895,32 @@ router.put('/:id/final-reply', requireAuth, upload.array('photos', 50), async (r
   }
 });
 
+// GET /api/entries/backup - download full backup as JSON (admin only)
+router.get('/backup', requireAdmin, async (req, res) => {
+  try {
+    const entriesSnap = await db.collection('entries').get();
+    const entries = [];
+    entriesSnap.forEach(doc => entries.push({ id: doc.id, ...doc.data() }));
+
+    const countersSnap = await db.collection('counters').get();
+    const counters = {};
+    countersSnap.forEach(doc => { counters[doc.id] = doc.data(); });
+
+    const backup = {
+      exportedAt: new Date().toISOString(),
+      totalEntries: entries.length,
+      counters,
+      entries
+    };
+
+    const filename = `firebase-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/json');
+    res.json(backup);
+  } catch (err) {
+    console.error('Backup error:', err);
+    res.status(500).json({ error: 'Failed to create backup.' });
+  }
+});
+
 module.exports = router;

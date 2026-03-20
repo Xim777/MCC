@@ -208,6 +208,25 @@ export default function DailyReport() {
             <p>{t.date}</p>
           </div>
         </div>
+
+        <div className="no-print" style={{ textAlign: 'right', marginTop: '8px' }}>
+          <button
+            className="btn-backup"
+            onClick={async () => {
+              try {
+                const res = await api.get('/entries/backup', { responseType: 'blob' });
+                const url = window.URL.createObjectURL(res.data);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `backup-${new Date().toISOString().slice(0, 10)}.json`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+              } catch { alert('Backup failed.'); }
+            }}
+          >
+            Export
+          </button>
+        </div>
       </div>
     </div>
   );
